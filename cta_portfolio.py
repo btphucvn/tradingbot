@@ -21,7 +21,7 @@ from src.backtest.broker import CostConfig, TradeBroker
 from src.strategies.breakout import BreakoutParams, BreakoutTrend
 from src.strategies.indicators import atr
 
-START, END = "2010-01-01", "2024-01-01"
+START, END = "2018-01-01", "2026-06-20"
 # 6 thị trường edge mạnh nhất (bỏ sugar/soybean/natgas/spx500)
 MARKETS = ["XAUUSD", "GBPJPY", "WTI", "COFFEE", "BTCUSD", "ETHUSD"]
 params = BreakoutParams(5, 14, 3.0, 5.0, False)
@@ -89,11 +89,13 @@ def main():
             cg, dd, cal, _ = stats(seg, L)
             print(f"  [{lbl}] CAGR {cg*100:.0f}% DD {dd*100:.0f}% Calmar {cal:.2f}")
         if name == "RISK-PARITY":
-            _, _, _, eq = stats(pr, 5)
+            Lc = 4.5
+            cg, dd, cal, eq = stats(pr, Lc)
             fig, ax = plt.subplots(figsize=(12, 5))
             ax.plot(eq.index, eq.values, lw=1.0)
             ax.set_yscale("log"); ax.axhline(1, color="gray", ls=":", lw=0.8)
-            ax.set_title("Danh mục CTA 10 thị trường risk-parity, lev 5x — CAGR 37%, DD -39%, Calmar 0.95")
+            ax.set_title(f"Danh mục CTA {len(MARKETS)} thị trường, {START[:4]}-{END[:4]}, "
+                         f"lev {Lc}x — CAGR {cg*100:.0f}%, DD {dd*100:.0f}%, Calmar {cal:.2f}")
             ax.set_ylabel("Vốn (x lần, log)")
             fig.tight_layout(); fig.savefig("results/cta_portfolio.png", dpi=110)
             print("  Đã lưu results/cta_portfolio.png")

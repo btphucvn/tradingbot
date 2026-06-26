@@ -16,9 +16,8 @@ from src.backtest.broker import CostConfig, TradeBroker
 from src.strategies.breakout import BreakoutParams, BreakoutTrend
 from src.strategies.indicators import atr
 
-START, END = "2010-01-01", "2024-01-01"
-MARKETS = ["XAUUSD", "GBPJPY", "WTI", "COFFEE", "BTCUSD", "ETHUSD",
-           "SUGAR", "SOYBEAN", "SPX500", "NATGAS"]
+START, END = "2018-01-01", "2026-06-20"
+MARKETS = ["XAUUSD", "GBPJPY", "WTI", "COFFEE", "BTCUSD", "ETHUSD"]
 LABELS = {
     "XAUUSD": "Vàng (XAU/USD)", "GBPJPY": "GBP/JPY", "WTI": "Dầu WTI",
     "COFFEE": "Cà phê", "BTCUSD": "Bitcoin", "ETHUSD": "Ethereum",
@@ -33,7 +32,7 @@ CLASS = {
 }
 PARAMS = BreakoutParams(5, 14, 3.0, 5.0, False)
 BARS_PER_YEAR = 252 * 6   # ~6 nến H4/ngày
-LEV_MAIN = 5.0
+LEV_MAIN = 4.5
 
 
 def run_sleeve(sym):
@@ -93,11 +92,20 @@ def main():
         ts = trade_stats(results[sym].trades)
         sret = rets[sym].dropna()
         sharpe = sret.mean() / sret.std() * np.sqrt(BARS_PER_YEAR) if sret.std() else 0
+        # đường vốn chuẩn hóa (bắt đầu = 1) + drawdown, lấy mẫu theo tuần cho chart
+        norm = eq / eq.iloc[0]
+        nds = norm.resample("W").last().dropna()
+        ddm = (norm / norm.cummax() - 1).resample("W").last().reindex(nds.index).fillna(0)
+        mchart = dict(
+            dates=[x.strftime("%Y-%m-%d") for x in nds.index],
+            equity=[round(float(v), 4) for v in nds.values],
+            dd=[round(float(v) * 100, 2) for v in ddm.values],
+        )
         market_rows.append(dict(
             sym=sym, label=LABELS[sym], cls=CLASS[sym],
             cagr=cg, dd=dd, calmar=cal, sharpe=sharpe,
             weight=avg_w[sym], **ts,
-            start=str(eq.index[0].date()),
+            start=str(eq.index[0].date()), chart=mchart,
         ))
 
     # ---- portfolio (risk-parity, lev 5) ----

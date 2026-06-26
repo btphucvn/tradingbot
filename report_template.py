@@ -35,9 +35,33 @@ def market_rows(markets):
     return "\n".join(rows)
 
 
+DOTCOLOR = {"c": "#a78bfa", "m": "#fbbf24", "fx": "#38bdf8",
+            "e": "#fb923c", "ag": "#34d399", "ix": "#f472b6"}
+
+
 def slug(cls):
     return {"Crypto": "c", "Kim loại": "m", "Ngoại hối": "fx",
             "Năng lượng": "e", "Nông sản": "ag", "Chỉ số": "ix"}.get(cls, "x")
+
+
+def market_cards(markets):
+    cards = []
+    for i, m in enumerate(markets):
+        sl = slug(m["cls"])
+        cards.append(f"""<div class="mc">
+  <div class="mc-h">
+    <div class="mc-t"><span class="dot {sl}"></span>{m['label']}</div>
+    <span class="tag">{m['cls']}</span>
+  </div>
+  <div class="mc-stats">
+    <div><span>CAGR</span><b class="{posneg(m['cagr'])}">{pct(m['cagr'])}</b></div>
+    <div><span>Max DD</span><b class="neg">{pct(m['dd'])}</b></div>
+    <div><span>Calmar</span><b>{num(m['calmar'])}</b></div>
+    <div><span>Lệnh</span><b>{m['n']}</b></div>
+  </div>
+  <div class="mc-chart"><canvas id="mc{i}"></canvas></div>
+</div>""")
+    return "\n".join(cards)
 
 
 def posneg(x):
@@ -105,6 +129,21 @@ def corr_table(corr):
 
 def render(d):
     p = d["port"]; meta = d["meta"]; iso = d["iso"]
+    # Kết luận IS/OOS trung thực: so Calmar OOS với IS
+    ic, oc = iso["IS"]["calmar"], iso["OOS"]["calmar"]
+    if oc >= ic * 0.9:
+        iso_verdict = (f'OOS Calmar ({num(oc)}) ≈ IS ({num(ic)}) → edge <b>giữ vững ngoài mẫu</b>, '
+                       'không phải overfit thuần.')
+    elif oc >= ic * 0.55:
+        iso_verdict = (f'OOS Calmar ({num(oc)}) <b>yếu hơn rõ</b> so với IS ({num(ic)}): hiệu suất giai đoạn '
+                       'gần đây kém hơn quá khứ — edge có thật nhưng đang suy giảm, đừng kỳ vọng theo số IS.')
+    else:
+        iso_verdict = (f'OOS Calmar ({num(oc)}) <b>sụt mạnh</b> so với IS ({num(ic)}): nghi ngờ overfit / '
+                       'edge phụ thuộc giai đoạn. Rất thận trọng.')
+    mkt_data = json.dumps([
+        dict(id=f"mc{i}", color=DOTCOLOR.get(slug(m["cls"]), "#5eead4"),
+             dates=m["chart"]["dates"], equity=m["chart"]["equity"], dd=m["chart"]["dd"])
+        for i, m in enumerate(d["markets"])])
     return f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -182,6 +221,19 @@ th.sep{{border-left:1px solid var(--line)}}
 
 .cols{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 @media(max-width:820px){{.cols{{grid-template-columns:1fr}}}}
+
+.mkt-charts{{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}}
+@media(max-width:900px){{.mkt-charts{{grid-template-columns:repeat(2,1fr)}}}}
+@media(max-width:560px){{.mkt-charts{{grid-template-columns:1fr}}}}
+.mc{{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+  border-radius:14px;padding:15px 16px}}
+.mc-h{{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}}
+.mc-t{{font-weight:650;font-size:14px}}
+.mc-stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}}
+.mc-stats div span{{display:block;font:600 9.5px var(--mono);letter-spacing:.04em;
+  text-transform:uppercase;color:var(--mut)}}
+.mc-stats div b{{font:700 14px var(--mono)}}
+.mc-chart{{position:relative;height:120px}}
 
 .mech{{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}}
 @media(max-width:820px){{.mech{{grid-template-columns:1fr}}}}
@@ -280,7 +332,7 @@ footer{{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:
       <p>Khối lượng tính sao cho mỗi lệnh rủi ro <code>1%</code> equity của sleeve:
       <code>units = risk$ / khoảng_cách_stop</code>. Quy đổi tiền tệ chính xác (GBPJPY → USD).</p></div>
     <div class="step"><div class="si"><div class="num">5</div><h4>Risk-parity — cân theo nghịch đảo vol</h4></div>
-      <p>Gộp 10 sleeve: thị trường ít biến động được trọng số lớn hơn để mỗi cái đóng góp
+      <p>Gộp {meta['n_markets']} sleeve: thị trường ít biến động được trọng số lớn hơn để mỗi cái đóng góp
       <b>rủi ro bằng nhau</b>. Vốn từ thị trường chưa có data được phân bổ lại cho cái đang active → không có "vốn chết".</p></div>
     <div class="step"><div class="si"><div class="num">6</div><h4>Đòn bẩy {meta['lev']:g}× + compound</h4></div>
       <p>Chuỗi lợi nhuận danh mục nhân <code>{meta['lev']:g}×</code> rồi cộng dồn kép.
@@ -303,9 +355,15 @@ footer{{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:
       </tbody>
     </table>
   </div>
-  <div class="kicker"><b>Crypto là yếu tố quyết định:</b> trước khi thêm BTC+ETH, danh mục Calmar chỉ ~0.54.
-  Crypto có edge trend mạnh <i>và</i> tương quan thấp với FX/hàng hóa, hoạt động đúng giai đoạn
-  yếu OOS trước đó → kéo Calmar lên ~0.95.</div>
+  <div class="kicker"><b>Rổ tinh gọn {meta['n_markets']} thị trường edge mạnh nhất</b> (Vàng, GBP/JPY, Dầu WTI,
+  Cà phê, BTC, ETH). Crypto đóng góp edge trend mạnh và tương quan thấp với FX/hàng hóa →
+  đa dạng hóa giúp drawdown các sleeve triệt tiêu lẫn nhau.</div>
+
+  <div class="h2" style="margin-top:26px"><h2 style="font-size:17px">Đường vốn từng thị trường</h2>
+    <span class="hint">chuẩn hóa về 1× tại điểm bắt đầu · thang log · chưa đòn bẩy</span></div>
+  <div class="mkt-charts">
+{market_cards(d['markets'])}
+  </div>
 </section>
 
 <section>
@@ -348,8 +406,8 @@ footer{{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:
       </div>
     </div>
   </div>
-  <div class="kicker">OOS Calmar <b>≥</b> IS Calmar → đây <b>không phải overfit thuần</b>. Tuy nhiên
-  10 thị trường được chọn vì có edge dương đo trên toàn kỳ (gồm cả OOS) → vẫn có selection bias, đọc cảnh báo bên dưới.</div>
+  <div class="kicker">{iso_verdict} Lưu ý {meta['n_markets']} thị trường được chọn vì có edge dương đo trên
+  toàn kỳ (gồm cả OOS) → vẫn có selection bias, đọc cảnh báo bên dưới.</div>
 </section>
 
 <section>
@@ -376,7 +434,7 @@ footer{{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);color:
   <div class="h2"><span class="n">08</span><h2>⚠️ Cảnh báo trung thực — đọc trước khi dùng tiền thật</h2></div>
   <div class="warn">
     <ol>
-      <li><b>Selection bias:</b> 10 thị trường được chọn vì có edge dương đo trên <b>toàn kỳ</b>
+      <li><b>Selection bias:</b> {meta['n_markets']} thị trường được chọn vì có edge dương đo trên <b>toàn kỳ</b>
         (gồm cả OOS) → kết quả OOS hơi lạc quan, forward thực tế có thể yếu hơn.</li>
       <li><b>Đòn bẩy {meta['lev']:g}× là cao:</b> DD backtest {pct(p['dd'])} có thể tệ hơn thực tế (gap cuối tuần,
         crypto gap mạnh, slippage). Rủi ro margin call là thật. <b>Khuyến nghị lev 4–4.5×</b>
@@ -438,6 +496,31 @@ new Chart(document.getElementById('dd'), {{
       y:{{grid:{{color:grid}}, ticks:{{callback:v=>v+'%'}}, max:0}},
       x:{{grid:{{display:false}}, ticks:{{maxTicksLimit:14, autoSkip:true}}}}
     }}}}
+}});
+
+// --- Biểu đồ từng thị trường (đường vốn chuẩn hóa, thang log) ---
+const M = {mkt_data};
+const hex2rgba = (h,a)=>{{const n=parseInt(h.slice(1),16);
+  return `rgba(${{n>>16&255}},${{n>>8&255}},${{n&255}},${{a}})`;}};
+M.forEach(m=>{{
+  const el = document.getElementById(m.id); if(!el) return;
+  new Chart(el, {{
+    type:'line',
+    data:{{labels:m.dates, datasets:[
+      {{data:m.equity, borderColor:m.color, backgroundColor:hex2rgba(m.color,.08),
+        borderWidth:1.4, pointRadius:0, fill:true, tension:.05}}
+    ]}},
+    options:{{responsive:true, maintainAspectRatio:false,
+      interaction:{{mode:'index',intersect:false}},
+      plugins:{{legend:{{display:false}}, tooltip:{{callbacks:{{
+        title:items=>items[0].label,
+        label:c=>'Vốn: '+c.parsed.y.toFixed(2)+'×  ·  DD '+M.find(x=>x.id===c.chart.canvas.id).dd[c.dataIndex].toFixed(0)+'%'}}}}}},
+      scales:{{
+        y:{{type:'logarithmic', grid:{{color:grid}}, ticks:{{
+          font:{{size:9}}, maxTicksLimit:4, callback:v=>v+'×'}}}},
+        x:{{grid:{{display:false}}, ticks:{{font:{{size:9}}, maxTicksLimit:5, autoSkip:true}}}}
+      }}}}
+  }});
 }});
 </script>
 </body>

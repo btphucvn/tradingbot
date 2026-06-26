@@ -12,13 +12,14 @@
 #include <Trade/Trade.mqh>
 
 //--- Tham số ---
-// Sửa danh sách cho ĐÚNG ký hiệu của broker bạn (vd US500, USOIL, XAUUSD, BTCUSD...)
-input string InpSymbols   = "XAUUSD,GBPJPY,USOIL,COFFEE,BTCUSD,ETHUSD";
+// Mặc định theo TÊN DUKASCOPY MT (hàng hóa có đuôi .CMD, WTI = LIGHT).
+// Broker khác đặt tên khác -> sửa cho khớp Market Watch (verify tên crypto!).
+input string InpSymbols   = "XAUUSD,GBPJPY,LIGHT.CMD,COFFEE.CMD,BTCUSD,ETHUSD";
 input int    InpEntryPeriod = 5;     // phá đỉnh/đáy N nến
 input int    InpAtrPeriod   = 14;
 input double InpSlAtr        = 3.0;  // stop ban đầu = 3*ATR
 input double InpTrailAtr     = 5.0;  // trailing = 5*ATR
-input double InpRiskPct      = 1.5;  // % rủi ro mỗi lệnh mỗi symbol (CALIBRATE trên demo!)
+input double InpRiskPct      = 1.0;  // % rủi ro mỗi lệnh mỗi symbol (CALIBRATE trên demo!)
 input bool   InpAllowLong    = true;
 input bool   InpAllowShort   = true;
 input ulong  InpMagic        = 990010;
