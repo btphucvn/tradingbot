@@ -13,7 +13,7 @@
 
 //--- Tham số ---
 // Sửa danh sách cho ĐÚNG ký hiệu của broker bạn (vd US500, USOIL, XAUUSD, BTCUSD...)
-input string InpSymbols   = "XAUUSD,GBPJPY,USOIL,COFFEE,BTCUSD,ETHUSD,SUGAR,SOYBEAN,US500,NATGAS";
+input string InpSymbols   = "XAUUSD,GBPJPY,USOIL,COFFEE,BTCUSD,ETHUSD";
 input int    InpEntryPeriod = 5;     // phá đỉnh/đáy N nến
 input int    InpAtrPeriod   = 14;
 input double InpSlAtr        = 3.0;  // stop ban đầu = 3*ATR

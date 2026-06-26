@@ -22,9 +22,8 @@ from src.strategies.breakout import BreakoutParams, BreakoutTrend
 from src.strategies.indicators import atr
 
 START, END = "2010-01-01", "2024-01-01"
-# 10 thị trường edge dương (từ per_market.py), 5 lớp tài sản
-MARKETS = ["XAUUSD", "GBPJPY", "WTI", "COFFEE", "BTCUSD", "ETHUSD",
-           "SUGAR", "SOYBEAN", "SPX500", "NATGAS"]
+# 6 thị trường edge mạnh nhất (bỏ sugar/soybean/natgas/spx500)
+MARKETS = ["XAUUSD", "GBPJPY", "WTI", "COFFEE", "BTCUSD", "ETHUSD"]
 params = BreakoutParams(5, 14, 3.0, 5.0, False)
 
 
