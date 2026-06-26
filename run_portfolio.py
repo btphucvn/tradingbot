@@ -31,14 +31,22 @@ MARKETS_WIDE = ["GBPJPY", "EURUSD",                     # FX
                 "COFFEE", "SUGAR", "COCOA", "SOYBEAN"]  # nông sản
 
 
+# Ngày sớm nhất an toàn (Dukascopy treo nếu xin trước mốc này, kể cả D1)
+MIN_START = {"BTCUSD": "2017-05-07", "ETHUSD": "2017-12-11", "LTCUSD": "2018-09-03"}
+
+
 def load_h4_safe(sym, start, end):
     """Tải H4 an toàn: dùng D1 (bền) dò ngày khai sinh, rồi chỉ tải H4 từ đó.
 
     Tránh treo vĩnh viễn khi xin H4 trước ngày instrument có data (Dukascopy retry).
+    Với crypto, chính D1 cũng treo nếu xin trước inception -> dùng MIN_START.
     """
-    d1 = load(sym, "D1", start, end)
+    safe_start = start
+    if sym in MIN_START and pd.Timestamp(start) < pd.Timestamp(MIN_START[sym]):
+        safe_start = MIN_START[sym]
+    d1 = load(sym, "D1", safe_start, end)
     incept = d1.index[0].date()
-    real_start = max(pd.Timestamp(start).date(), incept)
+    real_start = max(pd.Timestamp(safe_start).date(), incept)
     return load(sym, "H4", real_start.isoformat(), end)
 
 

@@ -1,10 +1,48 @@
 # EA cho MetaTrader 5
 
-Hai EA trong thư mục này (cùng cách cài: chép vào `MQL5\Experts\`, compile F7):
+Ba EA (cùng cách cài: chép vào `MQL5\Experts\`, compile F7):
 
-- **`BreakoutTrendCTA.mq5`** ⭐ — chiến thuật chính đã verify (breakout cưỡi-trend +
-  trailing + sizing theo % rủi ro). Đây là EA NÊN DÙNG. Xem mục dưới cùng.
-- `DonchianBreakout.mq5` — baseline cũ (chỉ để tham khảo/so sánh).
+- **`CtaPortfolio.mq5`** ⭐⭐ — danh mục ĐA THỊ TRƯỜNG đạt **CAGR~37%, DD~−39%,
+  Calmar 0.95** (backtest Python). Một EA giao dịch cả 10 symbol. Xem ngay dưới.
+- `BreakoutTrendCTA.mq5` — phiên bản 1 symbol (cho từng chart riêng).
+- `DonchianBreakout.mq5` — baseline cũ (tham khảo).
+
+---
+
+## ⭐⭐ CtaPortfolio — danh mục 10 thị trường (mục tiêu CAGR>35% & DD<40%)
+
+Port từ `cta_portfolio.py`. Gắn vào **1 chart H4 bất kỳ** → EA tự giao dịch cả
+danh sách symbol bằng chiến thuật breakout + trailing + sizing theo % rủi ro.
+
+### Cài & chạy
+1. Chép `CtaPortfolio.mq5` vào `MQL5\Experts\`, compile (F7).
+2. Sửa input **`InpSymbols`** cho ĐÚNG ký hiệu broker của bạn. Mặc định:
+   `XAUUSD,GBPJPY,USOIL,COFFEE,BTCUSD,ETHUSD,SUGAR,SOYBEAN,US500,NATGAS`
+   (mỗi broker đặt tên khác: vàng có thể là `GOLD`, S&P là `US500/SPX500/SP500`,
+   dầu là `USOIL/WTI/CL`, crypto là `BTCUSD/BTCUSDT`... — kiểm trong Market Watch).
+3. Đảm bảo các symbol đều **hiện trong Market Watch** (EA tự gọi SymbolSelect nhưng
+   broker phải cung cấp symbol đó).
+4. Gắn EA vào 1 chart H4, bật AutoTrading.
+
+### Tham số chính
+| Input | Mặc định | Ghi chú |
+|-------|----------|---------|
+| InpSymbols | 10 symbol | Sửa cho đúng tên broker |
+| InpEntryPeriod | 5 | Donchian phá 5 nến |
+| InpSlAtr / InpTrailAtr | 3 / 5 | Stop 3×ATR, trailing 5×ATR |
+| **InpRiskPct** | **1.5** | % rủi ro/lệnh/symbol — **CALIBRATE trên demo** |
+
+### ⚠️ Cực kỳ quan trọng
+- **Backtest danh mục PHẢI dùng Python `cta_portfolio.py`.** MT5 Strategy Tester
+  chạy đa-symbol rất hạn chế — EA này dành cho **LIVE/DEMO**, không phải để backtest
+  trong Tester.
+- **`InpRiskPct` quyết định đòn bẩy thực.** Backtest dùng leverage ~5× (DD −39%).
+  Với 10 symbol chạy song song, **bắt đầu InpRiskPct THẤP (0.5–1%)** trên demo, theo
+  dõi tổng ký quỹ/exposure, rồi tăng dần. 1.5% × nhiều vị thế đồng thời = đòn bẩy cao.
+- **Cần broker có đủ 10 thị trường** (gồm crypto + CFD hàng hóa/chỉ số). Nếu thiếu
+  vài cái, bỏ khỏi `InpSymbols` — danh mục vẫn chạy nhưng ít đa dạng hóa hơn.
+- Rủi ro thật: DD −39% (mất gần 40% tài khoản), phụ thuộc sóng crypto. Đọc
+  `docs/cta-portfolio-cagr35.md` mục cảnh báo. **Chạy demo ≥6 tháng trước.**
 
 ---
 

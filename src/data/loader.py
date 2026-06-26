@@ -49,6 +49,10 @@ INSTRUMENTS: dict[str, str] = {
     "PLATINUM": duka_instruments.INSTRUMENT_CMD_METALS_XPT_CMD_USD,
     "COCOA": duka_instruments.INSTRUMENT_CMD_AGRICULTURAL_COCOA_CMD_USD,
     "SOYBEAN": duka_instruments.INSTRUMENT_CMD_AGRICULTURAL_SOYBEAN_CMD_USX,
+    # Crypto (quote USD)
+    "BTCUSD": duka_instruments.INSTRUMENT_VCCY_BTC_USD,
+    "ETHUSD": duka_instruments.INSTRUMENT_VCCY_ETH_USD,
+    "LTCUSD": duka_instruments.INSTRUMENT_VCCY_LTC_USD,
 }
 
 # Map khung thời gian -> hằng số interval của dukascopy.
