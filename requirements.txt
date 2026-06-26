@@ -1,0 +1,4 @@
+dukascopy-python>=4.0.0
+pandas>=2.0
+numpy>=1.26
+matplotlib>=3.8
